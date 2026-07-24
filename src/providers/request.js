@@ -53,8 +53,19 @@ export async function requestHelper(url, options = {}) {
         }
       }
 
-      const response = await fetch(url, fetchOptions);
+      let response = await fetch(url, fetchOptions);
       clearTimeout(timeoutId);
+
+      console.log(`HTTP Status: ${response.status} ${response.statusText}`);
+
+      if (!response.ok && response.status === 404 && options.fallbackUrl) {
+        console.log(`[Naze API] Primary endpoint returned 404. Attempting fallback URL...`);
+        const fallbackRes = await fetch(options.fallbackUrl, fetchOptions);
+        console.log(`Fallback HTTP Status: ${fallbackRes.status} ${fallbackRes.statusText}`);
+        if (fallbackRes.ok) {
+          response = fallbackRes;
+        }
+      }
 
       if (!response.ok) {
         let errorDetails = "";
