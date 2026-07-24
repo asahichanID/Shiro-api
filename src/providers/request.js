@@ -53,19 +53,44 @@ export async function requestHelper(url, options = {}) {
         }
       }
 
-      let response = await fetch(url, fetchOptions);
-      clearTimeout(timeoutId);
+      let urlsToTry = options.candidateUrls && Array.isArray(options.candidateUrls) && options.candidateUrls.length > 0
+        ? options.candidateUrls
+        : [url];
 
-      console.log(`HTTP Status: ${response.status} ${response.statusText}`);
+      if (options.fallbackUrl && !urlsToTry.includes(options.fallbackUrl)) {
+        urlsToTry.push(options.fallbackUrl);
+      }
 
-      if (!response.ok && response.status === 404 && options.fallbackUrl) {
-        console.log(`[Naze API] Primary endpoint returned 404. Attempting fallback URL...`);
-        const fallbackRes = await fetch(options.fallbackUrl, fetchOptions);
-        console.log(`Fallback HTTP Status: ${fallbackRes.status} ${fallbackRes.statusText}`);
-        if (fallbackRes.ok) {
-          response = fallbackRes;
+      let response = null;
+      let lastAttemptStatus = 0;
+
+      for (const targetUrl of urlsToTry) {
+        try {
+          const candidateRes = await fetch(targetUrl, fetchOptions);
+          lastAttemptStatus = candidateRes.status;
+          console.log(`HTTP Status [${targetUrl}]: ${candidateRes.status} ${candidateRes.statusText}`);
+
+          if (candidateRes.ok) {
+            response = candidateRes;
+            break;
+          } else if (candidateRes.status !== 404) {
+            // Non-404 error (e.g. 401, 403, 500) - save response and stop trying candidates
+            response = candidateRes;
+            break;
+          }
+        } catch (fetchErr) {
+          console.warn(`Fetch candidate error [${targetUrl}]:`, fetchErr?.message || fetchErr);
         }
       }
+
+      if (!response) {
+        throw new ProviderError(
+          `Upstream provider returned HTTP ${lastAttemptStatus || 404} for all candidate endpoints`,
+          ERROR_CODES.PROVIDER_ERROR,
+          lastAttemptStatus === 404 ? 404 : 502
+        );
+      }
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         let errorDetails = "";

@@ -45,7 +45,7 @@ function logPreFetch(endpoint, queryVal, keyLoaded) {
 export const NazeProvider = {
   /**
    * Search YouTube videos via Naze API
-   * Endpoint: /api/search/youtube (alias: /api/ytsearch)
+   * Endpoint: /search/youtube?query={query}&apikey={apikey}
    * @param {string} query Search terms
    * @param {string} apiKey NAZE_API_KEY
    * @returns {Promise<Object>}
@@ -53,21 +53,25 @@ export const NazeProvider = {
   async searchYouTube(query, apiKey) {
     const key = ensureApiKey(apiKey);
     const keyLoaded = Boolean(key);
-    const cleanEndpoint = `${BASE_URL}/api/search/youtube`;
-    const targetUrl = `${cleanEndpoint}?query=${encodeURIComponent(query)}&apikey=${encodeURIComponent(key)}`;
+    const cleanEndpoint = `${BASE_URL}/search/youtube`;
+
+    const candidateUrls = [
+      `${BASE_URL}/search/youtube?query=${encodeURIComponent(query)}&apikey=${encodeURIComponent(key)}`,
+      `${BASE_URL}/api/search/youtube?query=${encodeURIComponent(query)}&apikey=${encodeURIComponent(key)}`,
+    ];
 
     logPreFetch(cleanEndpoint, query, keyLoaded);
 
-    return await requestHelper(targetUrl, {
+    return await requestHelper(candidateUrls[0], {
+      candidateUrls,
       timeoutMs: config.providers.naze.timeoutMs,
       retryCount: config.providers.naze.retryCount,
-      fallbackUrl: `${BASE_URL}/api/ytsearch?q=${encodeURIComponent(query)}&apikey=${encodeURIComponent(key)}`,
     });
   },
 
   /**
    * Get YouTube Audio (MP3) download information
-   * Endpoint: /api/downloader/ytaudio (alias: /api/ytaudio)
+   * Endpoint: /download/youtube?url={url}&format=mp3&apikey={apikey}
    * @param {string} id YouTube Video ID or URL
    * @param {string} apiKey NAZE_API_KEY
    * @returns {Promise<Object>}
@@ -76,21 +80,25 @@ export const NazeProvider = {
     const key = ensureApiKey(apiKey);
     const keyLoaded = Boolean(key);
     const videoUrl = id.startsWith("http") ? id : `https://www.youtube.com/watch?v=${id}`;
-    const cleanEndpoint = `${BASE_URL}/api/downloader/ytaudio`;
-    const targetUrl = `${cleanEndpoint}?url=${encodeURIComponent(videoUrl)}&apikey=${encodeURIComponent(key)}`;
+    const cleanEndpoint = `${BASE_URL}/download/youtube`;
 
-    logPreFetch(cleanEndpoint, videoUrl, keyLoaded);
+    const candidateUrls = [
+      `${BASE_URL}/download/youtube?url=${encodeURIComponent(videoUrl)}&format=mp3&apikey=${encodeURIComponent(key)}`,
+      `${BASE_URL}/api/download/youtube?url=${encodeURIComponent(videoUrl)}&format=mp3&apikey=${encodeURIComponent(key)}`,
+    ];
 
-    return await requestHelper(targetUrl, {
+    logPreFetch(cleanEndpoint, `${videoUrl} (format: mp3)`, keyLoaded);
+
+    return await requestHelper(candidateUrls[0], {
+      candidateUrls,
       timeoutMs: config.providers.naze.timeoutMs,
       retryCount: config.providers.naze.retryCount,
-      fallbackUrl: `${BASE_URL}/api/ytaudio?url=${encodeURIComponent(videoUrl)}&apikey=${encodeURIComponent(key)}`,
     });
   },
 
   /**
    * Get YouTube Video (MP4) download information
-   * Endpoint: /api/downloader/ytvideo (alias: /api/ytvideo)
+   * Endpoint: /download/youtube?url={url}&format={quality}&apikey={apikey}
    * @param {string} id YouTube Video ID or URL
    * @param {string} quality Video quality (default 720)
    * @param {string} apiKey NAZE_API_KEY
@@ -100,21 +108,26 @@ export const NazeProvider = {
     const key = ensureApiKey(apiKey);
     const keyLoaded = Boolean(key);
     const videoUrl = id.startsWith("http") ? id : `https://www.youtube.com/watch?v=${id}`;
-    const cleanEndpoint = `${BASE_URL}/api/downloader/ytvideo`;
-    const targetUrl = `${cleanEndpoint}?url=${encodeURIComponent(videoUrl)}&quality=${encodeURIComponent(quality)}&apikey=${encodeURIComponent(key)}`;
+    const format = quality || "720";
+    const cleanEndpoint = `${BASE_URL}/download/youtube`;
 
-    logPreFetch(cleanEndpoint, `${videoUrl} (Quality: ${quality})`, keyLoaded);
+    const candidateUrls = [
+      `${BASE_URL}/download/youtube?url=${encodeURIComponent(videoUrl)}&format=${encodeURIComponent(format)}&apikey=${encodeURIComponent(key)}`,
+      `${BASE_URL}/api/download/youtube?url=${encodeURIComponent(videoUrl)}&format=${encodeURIComponent(format)}&apikey=${encodeURIComponent(key)}`,
+    ];
 
-    return await requestHelper(targetUrl, {
+    logPreFetch(cleanEndpoint, `${videoUrl} (format: ${format})`, keyLoaded);
+
+    return await requestHelper(candidateUrls[0], {
+      candidateUrls,
       timeoutMs: config.providers.naze.timeoutMs,
       retryCount: config.providers.naze.retryCount,
-      fallbackUrl: `${BASE_URL}/api/ytvideo?url=${encodeURIComponent(videoUrl)}&quality=${encodeURIComponent(quality)}&apikey=${encodeURIComponent(key)}`,
     });
   },
 
   /**
    * Get Spotify Downloader information
-   * Endpoint: /api/downloader/spotify (alias: /api/spotify)
+   * Endpoint: /download/spotify?url={url}&apikey={apikey}
    * @param {string} spotifyUrl Spotify track/album URL
    * @param {string} apiKey NAZE_API_KEY
    * @returns {Promise<Object>}
@@ -122,21 +135,51 @@ export const NazeProvider = {
   async getSpotifyDownload(spotifyUrl, apiKey) {
     const key = ensureApiKey(apiKey);
     const keyLoaded = Boolean(key);
-    const cleanEndpoint = `${BASE_URL}/api/downloader/spotify`;
-    const targetUrl = `${cleanEndpoint}?url=${encodeURIComponent(spotifyUrl)}&apikey=${encodeURIComponent(key)}`;
+    const cleanEndpoint = `${BASE_URL}/download/spotify`;
+
+    const candidateUrls = [
+      `${BASE_URL}/download/spotify?url=${encodeURIComponent(spotifyUrl)}&apikey=${encodeURIComponent(key)}`,
+      `${BASE_URL}/api/download/spotify?url=${encodeURIComponent(spotifyUrl)}&apikey=${encodeURIComponent(key)}`,
+    ];
 
     logPreFetch(cleanEndpoint, spotifyUrl, keyLoaded);
 
-    return await requestHelper(targetUrl, {
+    return await requestHelper(candidateUrls[0], {
+      candidateUrls,
       timeoutMs: config.providers.naze.timeoutMs,
       retryCount: config.providers.naze.retryCount,
-      fallbackUrl: `${BASE_URL}/api/spotify?url=${encodeURIComponent(spotifyUrl)}&apikey=${encodeURIComponent(key)}`,
+    });
+  },
+
+  /**
+   * Search Spotify songs via Naze API
+   * Endpoint: /search/spotify?query={query}&apikey={apikey}
+   * @param {string} query Search query
+   * @param {string} apiKey NAZE_API_KEY
+   * @returns {Promise<Object>}
+   */
+  async searchSpotify(query, apiKey) {
+    const key = ensureApiKey(apiKey);
+    const keyLoaded = Boolean(key);
+    const cleanEndpoint = `${BASE_URL}/search/spotify`;
+
+    const candidateUrls = [
+      `${BASE_URL}/search/spotify?query=${encodeURIComponent(query)}&apikey=${encodeURIComponent(key)}`,
+      `${BASE_URL}/api/search/spotify?query=${encodeURIComponent(query)}&apikey=${encodeURIComponent(key)}`,
+    ];
+
+    logPreFetch(cleanEndpoint, query, keyLoaded);
+
+    return await requestHelper(candidateUrls[0], {
+      candidateUrls,
+      timeoutMs: config.providers.naze.timeoutMs,
+      retryCount: config.providers.naze.retryCount,
     });
   },
 
   /**
    * Get TikTok Downloader information
-   * Endpoint: /api/downloader/tiktok (alias: /api/tiktok)
+   * Endpoint: /download/tiktok?url={url}&apikey={apikey}
    * @param {string} tiktokUrl TikTok video URL
    * @param {string} apiKey NAZE_API_KEY
    * @returns {Promise<Object>}
@@ -144,15 +187,19 @@ export const NazeProvider = {
   async getTikTokDownload(tiktokUrl, apiKey) {
     const key = ensureApiKey(apiKey);
     const keyLoaded = Boolean(key);
-    const cleanEndpoint = `${BASE_URL}/api/downloader/tiktok`;
-    const targetUrl = `${cleanEndpoint}?url=${encodeURIComponent(tiktokUrl)}&apikey=${encodeURIComponent(key)}`;
+    const cleanEndpoint = `${BASE_URL}/download/tiktok`;
+
+    const candidateUrls = [
+      `${BASE_URL}/download/tiktok?url=${encodeURIComponent(tiktokUrl)}&apikey=${encodeURIComponent(key)}`,
+      `${BASE_URL}/api/download/tiktok?url=${encodeURIComponent(tiktokUrl)}&apikey=${encodeURIComponent(key)}`,
+    ];
 
     logPreFetch(cleanEndpoint, tiktokUrl, keyLoaded);
 
-    return await requestHelper(targetUrl, {
+    return await requestHelper(candidateUrls[0], {
+      candidateUrls,
       timeoutMs: config.providers.naze.timeoutMs,
       retryCount: config.providers.naze.retryCount,
-      fallbackUrl: `${BASE_URL}/api/tiktok?url=${encodeURIComponent(tiktokUrl)}&apikey=${encodeURIComponent(key)}`,
     });
   },
 };
