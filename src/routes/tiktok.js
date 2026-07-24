@@ -12,7 +12,20 @@ import { PROVIDERS } from "../constants.js";
 
 export async function handleTikTok(request, env) {
   const url = new URL(request.url);
-  const rawUrl = url.searchParams.get("url") || url.searchParams.get("link");
+  let rawUrl =
+    url.searchParams.get("url") ||
+    url.searchParams.get("link") ||
+    url.searchParams.get("id") ||
+    url.searchParams.get("query");
+
+  if (!rawUrl && (request.method === "POST" || request.method === "PUT")) {
+    try {
+      const body = await request.json();
+      rawUrl = body?.url || body?.link || body?.id;
+    } catch {
+      // Ignore
+    }
+  }
 
   const tiktokUrl = validateUrl(rawUrl, ["tiktok.com"]);
   const cacheKey = `tiktok:${tiktokUrl}`;

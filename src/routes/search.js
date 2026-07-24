@@ -12,7 +12,21 @@ import { PROVIDERS } from "../constants.js";
 
 export async function handleSearch(request, env) {
   const url = new URL(request.url);
-  const rawQuery = url.searchParams.get("query") || url.searchParams.get("q");
+  let rawQuery =
+    url.searchParams.get("query") ||
+    url.searchParams.get("q") ||
+    url.searchParams.get("search") ||
+    url.searchParams.get("text") ||
+    url.searchParams.get("keywords");
+
+  if (!rawQuery && (request.method === "POST" || request.method === "PUT")) {
+    try {
+      const body = await request.json();
+      rawQuery = body?.query || body?.q || body?.search || body?.text;
+    } catch {
+      // Ignore JSON parse error if body is empty
+    }
+  }
 
   const query = validateQuery(rawQuery);
   const cacheKey = `search:${query.toLowerCase()}`;
