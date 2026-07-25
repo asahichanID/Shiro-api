@@ -42,11 +42,8 @@ export async function handleSearch(request, env) {
   }
 
   const { nazeApiKey } = getEnvConfig(env);
-  const isSpotify = url.pathname.includes("spotify");
-  const providerResult = isSpotify
-    ? await NazeProvider.searchSpotify(query, nazeApiKey)
-    : await NazeProvider.searchYouTube(query, nazeApiKey);
-
+  const providerResult = await NazeProvider.searchYouTube(query, nazeApiKey);
+  
   // Cache for 10 minutes (600s)
   await CacheManager.set(cacheKey, providerResult, 600, env);
 
